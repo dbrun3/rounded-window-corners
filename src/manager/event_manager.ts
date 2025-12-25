@@ -203,7 +203,9 @@ function applyEffectTo(actor: RoundedWindowActor) {
  */
 function removeEffectFrom(actor: RoundedWindowActor) {
     disconnectAll(actor);
-    disconnectAll(actor.metaWindow);
+    if (actor?.metaWindow) {
+        disconnectAll(actor.metaWindow);
+    }
 
     handlers.onRemoveEffect(actor);
 }

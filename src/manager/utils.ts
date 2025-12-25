@@ -55,7 +55,7 @@ export function getRoundedCornersEffect(
     actor: Meta.WindowActor,
 ): RoundedCornersEffectType | null {
     const name = ROUNDED_CORNERS_EFFECT;
-    return actor.lastChild.get_effect(name) as RoundedCornersEffectType;
+    return actor?.lastChild?.get_effect(name) as RoundedCornersEffectType | null;
 }
 
 /**
@@ -100,8 +100,8 @@ export function computeBounds(
     // clip its shadow and recompute the outer bounds for it.
     if (
         getPref('tweak-kitty-terminal') &&
-        actor.metaWindow.get_client_type() === Meta.WindowClientType.WAYLAND &&
-        actor.metaWindow.get_wm_class_instance() === 'kitty'
+        actor.metaWindow?.get_client_type() === Meta.WindowClientType.WAYLAND &&
+        actor.metaWindow?.get_wm_class_instance() === 'kitty'
     ) {
         const [x1, y1, x2, y2] = APP_SHADOWS.kitty;
         const scale = windowScaleFactor(actor.metaWindow);

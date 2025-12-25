@@ -32,9 +32,12 @@ import {
 } from './utils.js';
 
 export function onAddEffect(actor: RoundedWindowActor) {
-    logDebug(`Adding effect to ${actor?.metaWindow.title}`);
+    const win = actor?.metaWindow;
+    if (!win) {
+        return;
+    }
 
-    const win = actor.metaWindow;
+    logDebug(`Adding effect to ${win.title}`);
 
     if (!shouldEnableEffect(win)) {
         logDebug(`Skipping ${win.title}`);
@@ -79,10 +82,10 @@ export function onAddEffect(actor: RoundedWindowActor) {
 
 export function onRemoveEffect(actor: RoundedWindowActor): void {
     const name = ROUNDED_CORNERS_EFFECT;
-    actor.get_last_child()?.remove_effect_by_name(name);
+    actor?.get_last_child()?.remove_effect_by_name(name);
 
     // Remove shadow actor
-    const shadow = actor.rwcCustomData?.shadow;
+    const shadow = actor?.rwcCustomData?.shadow;
     if (shadow) {
         global.windowGroup.remove_child(shadow);
         shadow.clear_effects();
@@ -90,19 +93,21 @@ export function onRemoveEffect(actor: RoundedWindowActor): void {
     }
 
     // Remove all timeout handler
-    const timeoutId = actor.rwcCustomData?.unminimizedTimeoutId;
+    const timeoutId = actor?.rwcCustomData?.unminimizedTimeoutId;
     if (timeoutId) {
         GLib.source_remove(timeoutId);
     }
-    delete actor.rwcCustomData;
+    if (actor) {
+        delete actor.rwcCustomData;
+    }
 }
 
 export function onMinimize(actor: RoundedWindowActor): void {
     // Compatibility with "Compiz alike magic lamp effect".
     // When minimizing a window, disable the shadow to make the magic lamp effect
     // work.
-    const magicLampEffect = actor.get_effect('minimize-magic-lamp-effect');
-    const shadow = actor.rwcCustomData?.shadow;
+    const magicLampEffect = actor?.get_effect('minimize-magic-lamp-effect');
+    const shadow = actor?.rwcCustomData?.shadow;
     const roundedCornersEffect = getRoundedCornersEffect(actor);
     if (magicLampEffect && shadow && roundedCornersEffect) {
         logDebug('Minimizing with magic lamp effect');
@@ -115,8 +120,8 @@ export function onUnminimize(actor: RoundedWindowActor): void {
     // Compatibility with "Compiz alike magic lamp effect".
     // When unminimizing a window, wait until the effect is completed before
     // showing the shadow.
-    const magicLampEffect = actor.get_effect('unminimize-magic-lamp-effect');
-    const shadow = actor.rwcCustomData?.shadow;
+    const magicLampEffect = actor?.get_effect('unminimize-magic-lamp-effect');
+    const shadow = actor?.rwcCustomData?.shadow;
     const roundedCornersEffect = getRoundedCornersEffect(actor);
     if (magicLampEffect && shadow && roundedCornersEffect) {
         shadow.visible = false;
@@ -198,9 +203,9 @@ function createShadow(actor: Meta.WindowActor): St.Bin {
  * @param actor - The window actor to refresh the shadow for.
  */
 function refreshShadow(actor: RoundedWindowActor) {
-    const win = actor.metaWindow;
-    const shadow = actor.rwcCustomData?.shadow;
-    if (!shadow) {
+    const win = actor?.metaWindow;
+    const shadow = actor?.rwcCustomData?.shadow;
+    if (!win || !shadow) {
         return;
     }
 
@@ -219,7 +224,10 @@ function refreshShadow(actor: RoundedWindowActor) {
  * @param actor - The window actor to refresh the rounded corners settings for.
  */
 function refreshRoundedCorners(actor: RoundedWindowActor): void {
-    const win = actor.metaWindow;
+    const win = actor?.metaWindow;
+    if (!win) {
+        return;
+    }
 
     const windowInfo = actor.rwcCustomData;
     const effect = getRoundedCornersEffect(actor);
