@@ -3,16 +3,14 @@
  * effect. See {@link enableEffect} for more information.
  */
 
+import type GObject from 'gi://GObject';
+import type Meta from 'gi://Meta';
+import type Shell from 'gi://Shell';
+import type {RoundedWindowActor} from '../utils/types.js';
+
 import {logDebug} from '../utils/log.js';
 import {prefs} from '../utils/settings.js';
 import * as handlers from './event_handlers.js';
-
-import type GObject from 'gi://GObject';
-import type Gio from 'gi://Gio';
-import type Meta from 'gi://Meta';
-import type Shell from 'gi://Shell';
-import type {SchemaKey} from '../utils/settings.js';
-import type {RoundedWindowActor} from '../utils/types.js';
 
 /**
  * The rounded corners effect has to perform some actions when differen events
@@ -24,9 +22,7 @@ import type {RoundedWindowActor} from '../utils/types.js';
  */
 export function enableEffect() {
     // Update the effect when settings are changed.
-    connect(prefs, 'changed', (_: Gio.Settings, key: string) =>
-        handlers.onSettingsChanged(key as SchemaKey),
-    );
+    connect(prefs, 'changed', handlers.onSettingsChanged);
 
     const wm = global.windowManager;
 
@@ -99,8 +95,7 @@ const connections: {object: GObject.Object; id: number}[] = [];
 function connect(
     object: GObject.Object,
     signal: string,
-    // Signal callbacks can have any return args and return types.
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: Signal callbacks can have any return args and return types.
     callback: (...args: any[]) => any,
 ) {
     connections.push({
@@ -165,19 +160,37 @@ function applyEffectTo(actor: RoundedWindowActor) {
     // that? I have no idea. But without that, weird bugs can happen. For
     // example, when using Dash to Dock, all opened windows will be invisible
     // *unless they are pinned in the dock*. So yeah, GNOME is magic.
-    connect(actor, 'notify::size', () => handlers.onSizeChanged(actor));
+    connect(actor, 'notify::size', () => {
+        if (actor.metaWindow) {
+            handlers.onSizeChanged(actor);
+        }
+    });
     connect(texture, 'size-changed', () => {
-        handlers.onSizeChanged(actor);
+        if (actor.metaWindow) {
+            handlers.onSizeChanged(actor);
+        }
+    });
+
+    // Get notified about fullscreen explicitly, since a window must not change in
+    // size to go fullscreen
+    connect(actor.metaWindow, 'notify::fullscreen', () => {
+        if (actor.metaWindow) {
+            handlers.onSizeChanged(actor);
+        }
     });
 
     // Window focus changed.
-    connect(actor.metaWindow, 'notify::appears-focused', () =>
-        handlers.onFocusChanged(actor),
-    );
+    connect(actor.metaWindow, 'notify::appears-focused', () => {
+        if (actor.metaWindow) {
+            handlers.onFocusChanged(actor);
+        }
+    });
 
     // Workspace or monitor of the window changed.
     connect(actor.metaWindow, 'workspace-changed', () => {
-        handlers.onFocusChanged(actor);
+        if (actor.metaWindow) {
+            handlers.onFocusChanged(actor);
+        }
     });
 
     handlers.onAddEffect(actor);

@@ -4,17 +4,17 @@
  * are used for storing GSettings.
  */
 
-import GLib from 'gi://GLib';
-
-import {logDebug} from './log.js';
-
-import type GObject from 'gi://GObject';
 import type Gio from 'gi://Gio';
+import type GObject from 'gi://GObject';
 import type {
     BoxShadow,
     CustomRoundedCornerSettings,
     RoundedCornerSettings,
 } from './types.js';
+
+import GLib from 'gi://GLib';
+
+import {logDebug} from './log.js';
 
 /** Mapping of schema keys to the JS representation of their type. */
 type Schema = {
@@ -77,7 +77,7 @@ export function uninitPrefs() {
  * @returns The value of the preference.
  */
 export function getPref<K extends SchemaKey>(key: K): Schema[K] {
-    return prefs.get_value(key).recursiveUnpack();
+    return prefs.get_value(key).recursiveUnpack() as Schema[K];
 }
 
 /**
@@ -97,6 +97,8 @@ export function setPref<K extends SchemaKey>(key: K, value: Schema[K]) {
             value as CustomRoundedCornerSettings,
         );
     } else {
+        // @ts-expect-error
+        // TypeScript can't figure out that the value will always match the glib schema type here
         variant = new GLib.Variant(Schema[key], value);
     }
 
@@ -123,7 +125,7 @@ function resetOutdated(prefs: Gio.Settings) {
     const lastVersion = 7;
     const currentVersion = prefs
         .get_user_value('settings-version')
-        ?.recursiveUnpack();
+        ?.recursiveUnpack() as number | undefined;
 
     if (!currentVersion || currentVersion < lastVersion) {
         if (prefs.list_keys().includes('black-list')) {
